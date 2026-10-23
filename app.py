@@ -1,15 +1,18 @@
 import telebot
 from telebot import types
-import os
+import time
 
 # --- НАСТРОЙКИ ---
-# Токен берется из переменной окружения FadeHost
-BOT_TOKEN = os.environ.get("8829249881:AAESFtd6XcYwcH6TPj4jQYfNbvx7qgf4e-Y")
+# Токен вписан напрямую, чтобы FadeHost не искал переменные окружения
+BOT_TOKEN = "8829249881:AAESFtd6XcYwcH6TPj4jQYfNbvx7qgf4e-Y"
 
 CHANNEL_1 = "@linkscriptos" 
 CHANNEL_2 = "@Scriptols" 
-# ----------------------------------------
 
+bot = telebot.TeleBot(BOT_TOKEN)
+
+# Кэш для проверки подписки (чтобы бот не тормозил)
+_sub_cache = {}
 
 SCRIPTS_DATA = {
     "scr_1": {
@@ -49,15 +52,21 @@ SCRIPTS_DATA = {
 def is_user_subscribed(user_id, channel_id):
     try:
         member = bot.get_chat_member(chat_id=channel_id, user_id=user_id)
-        if member.status in ['member', 'administrator', 'creator']:
-            return True
-        return False
+        return member.status in ['member', 'administrator', 'creator']
     except Exception as e:
-        print(f"Ошибка проверки канала {channel_id}: {e}")
+        print(f"[ОШИБКА] Проверка канала {channel_id}: {e}")
         return False
 
 def check_all_subscriptions(user_id):
-    return is_user_subscribed(user_id, CHANNEL_1) and is_user_subscribed(user_id, CHANNEL_2)
+    now = time.time()
+    if user_id in _sub_cache:
+        ts, result = _sub_cache[user_id]
+        if now - ts < 300: # Кэш на 5 минут
+            return result
+            
+    result = is_user_subscribed(user_id, CHANNEL_1) and is_user_subscribed(user_id, CHANNEL_2)
+    _sub_cache[user_id] = (now, result)
+    return result
 
 def get_sub_keyboard():
     keyboard = types.InlineKeyboardMarkup()
@@ -77,7 +86,6 @@ def get_scripts_menu():
     return keyboard
 
 @bot.message_handler(commands=['start'])
-
 def start_command(message):
     if check_all_subscriptions(message.from_user.id):
         bot.send_message(
@@ -94,6 +102,9 @@ def start_command(message):
 
 @bot.callback_query_handler(func=lambda call: call.data == "check_sub")
 def process_check_sub(call):
+    if call.from_user.id in _sub_cache:
+        del _sub_cache[call.from_user.id]
+
     if check_all_subscriptions(call.from_user.id):
         try:
             bot.delete_message(call.message.chat.id, call.message.message_id)
@@ -121,13 +132,12 @@ def process_get_script(call):
             bot.send_message(call.message.chat.id, script_info["text"], parse_mode="HTML")
             bot.answer_callback_query(call.id, text="Скрипт отправлен!")
         except Exception as e:
-            print(f"Ошибка отправки: {e}")
+            print(f"[ОШИБКА] Отправка скрипта: {e}")
             bot.answer_callback_query(call.id, text="Ошибка отправки.", show_alert=True)
     else:
         bot.answer_callback_query(call.id, text="Ошибка: скрипт не найден.")
 
 if __name__ == "__main__":
-    print("Бот успешно запущен!")
-    # remove_webhook на всякий случай, чтобы не было конфликтов при перезапуске
+    print("Бот успешно запущен и работает!")
     bot.remove_webhook()
     bot.infinity_polling(timeout=60, long_polling_timeout=60)
