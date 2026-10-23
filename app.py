@@ -77,6 +77,7 @@ def get_scripts_menu():
     return keyboard
 
 @bot.message_handler(commands=['start'])
+
 def start_command(message):
     if check_all_subscriptions(message.from_user.id):
         bot.send_message(
