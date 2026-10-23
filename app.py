@@ -10,7 +10,6 @@ CHANNEL_1 = "@linkscriptos"
 CHANNEL_2 = "@Scriptols" 
 # ----------------------------------------
 
-bot = telebot.TeleBot(BOT_TOKEN)
 
 SCRIPTS_DATA = {
     "scr_1": {
