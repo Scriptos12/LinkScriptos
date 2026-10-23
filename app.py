@@ -4,7 +4,7 @@ import os
 
 # --- НАСТРОЙКИ ---
 # Токен берется из переменной окружения FadeHost
-BOT_TOKEN = os.environ.get("BOT_TOKEN")
+BOT_TOKEN = os.environ.get("8829249881:AAESFtd6XcYwcH6TPj4jQYfNbvx7qgf4e-Y")
 
 CHANNEL_1 = "@linkscriptos" 
 CHANNEL_2 = "@Scriptols" 
